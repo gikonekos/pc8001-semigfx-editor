@@ -330,7 +330,7 @@
 
 <header>
   <h1>PC-8001 SEMI-GFX EDITOR</h1>
-  <div class="sub">SEMI-GRAPHIC · 2&#xD7;3 sub-px/char · 8 COLORS · Z80 ASM / PNG EXPORT &nbsp;|&nbsp; v1.4</div>
+  <div class="sub">SEMI-GRAPHIC · 2&#xD7;4 sub-px/char · 0x00-0xFF · 8 COLORS · Z80 ASM / PNG EXPORT &nbsp;|&nbsp; v1.5</div>
 </header>
 
 <div class="main">
@@ -348,12 +348,12 @@
       </div>
       <div class="info-row" style="font-size:10px;color:var(--accent);margin-top:1px">
         <span>&#x2192; dots:</span>
-        <span id="px-preview">160&#xD7;75</span>
+        <span id="px-preview">160&#xD7;100</span>
       </div>
       <button class="btn" onclick="resizeGrid()">&#x25A0; Apply</button>
       <div class="info-row">
         <span>current</span>
-        <span class="info-val" id="px-size">160&#xD7;75</span>
+        <span class="info-val" id="px-size">160&#xD7;100</span>
       </div>
     </section>
 
@@ -524,8 +524,8 @@ const MAX_UNDO = 50;
 // Cursor position for ASM preview
 let cursorCol = 0, cursorRow = 0;
 
-// Sub-pixel dimensions per cell
-const SW = 2, SH = 3; // sub-pixel cols, rows per char cell
+// Sub-pixel dimensions per cell: PC-8001 semi-graphic = 2 cols x 4 rows = 8 bits (0x00-0xFF)
+const SW = 2, SH = 4;
 
 // ───────────────────────────────────────────────
 // Init
@@ -926,29 +926,66 @@ function generateASM(range) {
   const c0 = range ? range.c0 : 0;
   const c1 = range ? range.c1 : COLS-1;
 
+  // PC-8001 color index → attribute flag (mode1: b3=1, b4=SG, b7b6b5=color)
+  // .WHITE=%11101000=0xE8, .SEMIGRPH=%00011000=0x18 → color|SG|mode1
+  // color bits: 0=000,1=001(RED→%01001000),2=010(GRN→%10001000)...
+  // From the reference: BLACK=0x08, BLUE=0x28, RED=0x48, MAG=0x68,
+  //   GREEN=0x88, CYAN=0xA8, YELLOW=0xC8, WHITE=0xE8
+  // SG flag = 0x10, so WHITE+SG = 0xE8|0x10 = 0xF8
+  const COLOR_ATTR = [0x08,0x48,0x88,0xC8,0x28,0x68,0xA8,0xE8];
+  // With SG bit set (0x10):
+  const COLOR_ATTR_SG = COLOR_ATTR.map(a => a | 0x10);
+
   const lines = [];
   lines.push('; PC-8001 Semi-Graphic Data');
-  lines.push(`; Grid: ${c1-c0+1} cols × ${r1-r0+1} rows (chars)`);
-  if (range) lines.push(`; Selection: col ${c0}–${c1}, row ${r0}–${r1}`);
-  lines.push('; Format: char_code, color_attr (per cell, row-major)');
-  lines.push('; Color attr: 0=BLK 1=RED 2=GRN 3=YEL 4=BLU 5=MAG 6=CYN 7=WHT');
+  lines.push(`; Grid: ${c1-c0+1} cols \xD7 ${r1-r0+1} rows`);
+  if (range) lines.push(`; Selection: col ${c0}\u2013${c1}, row ${r0}\u2013${r1}`);
+  lines.push('; RAM layout: 80 chars + 40 bytes attr per row (120 bytes/row)');
+  lines.push('; Char code 0x00-0xFF: b0=top-L b1=top-R b2=mid-upper-L b3=mid-upper-R');
+  lines.push(';                      b4=mid-lower-L b5=mid-lower-R b6=bot-L b7=bot-R');
+  lines.push('; Attr: [distance(0x00-0x50)][flag] x max 20 pairs, padded with 50H,00H');
+  lines.push('; Flag (mode1): b3=1, b4=SG, b7b6b5=color');
   lines.push('');
-  lines.push('; ── Pattern data (char codes) ──');
+
   for (let r=r0; r<=r1; r++) {
-    const bytes = [];
+    lines.push(`; ── row ${r} ──`);
+
+    // Text area (char codes)
+    const charBytes = [];
     for (let c=c0; c<=c1; c++) {
-      bytes.push('0' + (0xA0 | grid[r][c].bits).toString(16).toUpperCase() + 'H');
+      const code = grid[r][c].bits;
+      charBytes.push((code < 0x10 ? '0' : '') + code.toString(16).toUpperCase() + 'H');
     }
-    lines.push(`  DB  ${bytes.join(',')}\t; row ${r}`);
-  }
-  lines.push('');
-  lines.push('; ── Color attribute data ──');
-  for (let r=r0; r<=r1; r++) {
-    const bytes = [];
+    lines.push(`  DB  ${charBytes.join(',')}\t; text`);
+
+    // Attribute area: build run-length color change list
+    // Format: [distance, attr_flag] pairs, max 20, padded to 20 with 50H,00H
+    const pairs = []; // [{dist, flag}]
+    let prevColor = -1;
     for (let c=c0; c<=c1; c++) {
-      bytes.push(grid[r][c].color.toString(16).toUpperCase() + 'H');
+      const col = grid[r][c].color;
+      if (col !== prevColor) {
+        const dist = c - c0; // distance from left of selection
+        pairs.push({ dist, flag: COLOR_ATTR_SG[col] });
+        prevColor = col;
+      }
     }
-    lines.push(`  DB  ${bytes.join(',')}\t; row ${r}`);
+    // First entry must always start at distance 0
+    if (pairs.length === 0 || pairs[0].dist !== 0) {
+      pairs.unshift({ dist: 0, flag: COLOR_ATTR_SG[grid[r][c0].color] });
+    }
+    // Pad to 20 pairs with 0x50, 0x00
+    const attrBytes = [];
+    for (let i = 0; i < 20; i++) {
+      if (i < pairs.length) {
+        attrBytes.push((pairs[i].dist < 0x10 ? '0' : '') + pairs[i].dist.toString(16).toUpperCase() + 'H');
+        attrBytes.push((pairs[i].flag < 0x10 ? '0' : '') + pairs[i].flag.toString(16).toUpperCase() + 'H');
+      } else {
+        attrBytes.push('50H', '00H');
+      }
+    }
+    lines.push(`  DB  ${attrBytes.join(',')}\t; attr`);
+    lines.push('');
   }
   return lines.join('\n');
 }
@@ -989,26 +1026,32 @@ function updateAsmPreview() {
     if (changes > 20) warnings.push(`row${r}:${changes}`);
   }
 
-  let txt = '; 空セルは A0H です (bits=0)\n';
+  const COLOR_ATTR_SG_P = [0x18,0x58,0x98,0xD8,0x38,0x78,0xB8,0xF8];
+
+  let txt = '; \u7a7a\u30bb\u30eb\u306f 00H (bits=0)\n';
   if (warnings.length) txt += `; \u26a0 COLOR>${warnings.slice(0,3).join(' ')}${warnings.length>3?' +more':''}\n`;
   txt += `; c${c0}-${c1} r${r0}-${r1} [cur:${cc},${cr}]\n`;
-  txt += '; Pattern:\n';
   for (let r=r0; r<=r1; r++) {
-    const bytes = [];
+    // Text bytes
+    const charBytes = [];
     for (let c=c0; c<=c1; c++) {
-      const code = (0xA0|grid[r][c].bits).toString(16).toUpperCase().padStart(2,'0')+'H';
-      // Highlight cursor cell with brackets
-      bytes.push(r===cr && c===cc ? `[${code}]` : code);
+      const code = grid[r][c].bits;
+      const hex = (code < 0x10 ? '0' : '') + code.toString(16).toUpperCase() + 'H';
+      charBytes.push(r===cr && c===cc ? `[${hex}]` : hex);
     }
-    txt += `  DB ${bytes.join(',')}\n`;
-  }
-  txt += '; Color:\n';
-  for (let r=r0; r<=r1; r++) {
-    const bytes = [];
+    txt += `r${r} DB ${charBytes.join(',')}\n`;
+    // Attr pairs (abbreviated: show first few)
+    const pairs = [];
+    let prevCol = -1;
     for (let c=c0; c<=c1; c++) {
-      bytes.push(grid[r][c].color.toString());
+      const col = grid[r][c].color;
+      if (col !== prevCol) { pairs.push([c-c0, COLOR_ATTR_SG_P[col]]); prevCol = col; }
     }
-    txt += `  DB ${bytes.join(',')}\n`;
+    if (pairs.length===0) pairs.push([0, COLOR_ATTR_SG_P[grid[r][c0].color]]);
+    const attrStr = pairs.slice(0,4).map(([d,f])=>
+      (d<0x10?'0':'')+d.toString(16).toUpperCase()+'H,'+(f<0x10?'0':'')+f.toString(16).toUpperCase()+'H'
+    ).join(',') + (pairs.length>4?',...':'');
+    txt += `   AT ${attrStr}\n`;
   }
   el.textContent = txt;
 }
