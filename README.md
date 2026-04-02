@@ -68,6 +68,8 @@ Or use **GitHub Pages** directly:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.6 | 2026-04-02 | Stabilize color attribute: pen no longer overwrites color of already-lit cells; only newly empty cells get curColor on first stroke |
+| v1.5 | 2026-04-02 | Fix semi-graphic spec: 2×4 sub-pixels (8 bits, 0x00–0xFF); correct ASM output to real PC-8001 RAM layout (text + attribute pairs per row); attribute flag per hardware spec |
 | v1.4 | 2026-04-02 | Fix stale drag-state bug after tool switch; harden mousemove against missing mouseup; add Save/Load (.p8g edit state) |
 | v1.3 | 2026-04-02 | Right-click erase; zoom centered on screen center with scrollbar support; ASM preview cursor-centered real-time display with bracket highlight; image import (PNG/JPEG auto convert) |
 | v1.2 | 2026-04-02 | Fix grid right/bottom border lines; ASM preview scrollbar; color attribute >20 warning; version label in header |
@@ -148,6 +150,8 @@ git clone https://github.com/gikonekos/pc8001-semigfx-editor.git
 
 | バージョン | 日付 | 変更内容 |
 |------------|------|----------|
+| v1.6 | 2026-04-02 | カラーアトリビュート安定化：既に点灯済みのセルへのPen追加描画で色を上書きしない；空セルへの初回描画時のみcurColorを設定 |
+| v1.5 | 2026-04-02 | セミグラフィック仕様修正：2×4サブピクセル（8ビット、0x00〜0xFF）；ASM出力を実PC-8001 RAMレイアウトに対応；アトリビュートフラグをハードウェア仕様に準拠 |
 | v1.4 | 2026-04-02 | ツール切り替え時のstaleドラッグ状態バグ修正；mousemoveのmouseup取りこぼし対策；セーブ/ロード（.p8g編集状態）追加 |
 | v1.3 | 2026-04-02 | 右クリック消去；ズーム画面中心固定・スクロールバー対応；ASMプレビューカーソル中心リアルタイム表示（括弧ハイライト）；画像読み込み（PNG/JPEG自動変換） |
 | v1.2 | 2026-04-02 | グリッド右端・下端の枠線修正；ASMプレビュースクロールバー；カラーアトリビュート20回超え警告；ヘッダーバージョン表記 |

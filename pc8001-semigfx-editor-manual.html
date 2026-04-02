@@ -157,7 +157,7 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="topbar-spacer"></div>
   <a href="pc8001-semigfx-editor.html">🎨 Open Editor</a>
   <span class="topbar-sep">|</span>
-  <span>v1.4</span>
+  <span>v1.6</span>
 </div>
 
 <div class="page">
@@ -166,7 +166,7 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="hero-badge">DOCUMENTATION</div>
   <h1 id="en-top">PC-<em>8001</em> SEMI-GRAPHIC EDITOR<span class="cursor"></span></h1>
   <div class="hero-sub">Specification &amp; User Manual　／　仕様書 &amp; 利用マニュアル</div>
-  <div class="ver-tag">VERSION 1.4 — SINGLE FILE HTML — NO DEPENDENCIES</div>
+  <div class="ver-tag">VERSION 1.6 — SINGLE FILE HTML — NO DEPENDENCIES</div>
 </div>
 
 <!-- TOC EN -->
@@ -373,6 +373,8 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="tbl-wrap"><table>
     <thead><tr><th>Version</th><th>Date</th><th>Changes</th></tr></thead>
     <tbody>
+      <tr><td><span class="ver">v1.6</span></td><td>2026-04-02</td><td>Stabilize color attribute: pen no longer overwrites color of already-lit cells; only newly empty cells get curColor on first stroke</td></tr>
+      <tr><td><span class="ver">v1.5</span></td><td>2026-04-02</td><td>Fix semi-graphic spec: 2×4 sub-pixels (8 bits, 0x00–0xFF) per cell; correct ASM output to real PC-8001 RAM layout (text + attribute pairs per row); attribute flag format per hardware spec</td></tr>
       <tr><td><span class="ver">v1.4</span></td><td>2026-04-02</td><td>Fix stale drag-state bug after tool switch (reset painting/lastCell/selDragging in setTool); harden mousemove against missing mouseup; add Save/Load (.p8g edit state)</td></tr>
       <tr><td><span class="ver">v1.3</span></td><td>2026-04-02</td><td>Right-click erase; zoom centered on screen center with scrollbar support; ASM preview cursor-centered real-time display with bracket highlight; image import (PNG/JPEG auto convert)</td></tr>
       <tr><td><span class="ver">v1.2</span></td><td>2026-04-02</td><td>Fix grid right/bottom border lines; ASM preview scrollbar; color attribute &gt;20 warning; version label in header</td></tr>
@@ -595,6 +597,8 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="tbl-wrap"><table>
     <thead><tr><th>バージョン</th><th>日付</th><th>変更内容</th></tr></thead>
     <tbody>
+      <tr><td><span class="ver">v1.6</span></td><td>2026-04-02</td><td>カラーアトリビュート安定化：既に点灯済みのセルへのPen追加描画で色を上書きしない；空セルへの初回描画時のみcurColorを設定</td></tr>
+      <tr><td><span class="ver">v1.5</span></td><td>2026-04-02</td><td>セミグラフィック仕様修正：2×4サブピクセル（8ビット、0x00〜0xFF）に修正；ASM出力を実PC-8001 RAMレイアウト（テキスト＋アトリビュートペア）に対応；アトリビュートフラグをハードウェア仕様に準拠</td></tr>
       <tr><td><span class="ver">v1.4</span></td><td>2026-04-02</td><td>ツール切り替え時のstaleドラッグ状態バグ修正（setTool内でpainting/lastCell/selDraggingをリセット）；mousemoveのmouseup取りこぼし対策；セーブ/ロード（.p8g編集状態）追加</td></tr>
       <tr><td><span class="ver">v1.3</span></td><td>2026-04-02</td><td>右クリック消去；ズーム画面中心固定・スクロールバー対応；ASMプレビューカーソル中心リアルタイム表示（括弧ハイライト）；画像読み込み（PNG/JPEG自動変換）</td></tr>
       <tr><td><span class="ver">v1.2</span></td><td>2026-04-02</td><td>グリッド右端・下端の枠線修正；ASMプレビュースクロールバー；カラーアトリビュート20回超え警告；ヘッダーバージョン表記</td></tr>
@@ -609,7 +613,7 @@ footer a { color: var(--orange); text-decoration: none; }
 </div><!-- /page -->
 
 <footer>
-  <span>PC-8001 Semi-Graphic Editor</span> &nbsp;|&nbsp; v1.4 &nbsp;|&nbsp; MIT License<br>
+  <span>PC-8001 Semi-Graphic Editor</span> &nbsp;|&nbsp; v1.6 &nbsp;|&nbsp; MIT License<br>
   <a href="https://github.com/gikonekos/pc8001-semigfx-editor">github.com/gikonekos/pc8001-semigfx-editor</a>
 </footer>
 
