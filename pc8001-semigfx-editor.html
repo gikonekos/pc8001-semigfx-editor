@@ -1028,19 +1028,27 @@ function updateAsmPreview() {
 
   const COLOR_ATTR_SG_P = [0x18,0x58,0x98,0xD8,0x38,0x78,0xB8,0xF8];
 
-  let txt = '; \u7a7a\u30bb\u30eb\u306f 00H (bits=0)\n';
-  if (warnings.length) txt += `; \u26a0 COLOR>${warnings.slice(0,3).join(' ')}${warnings.length>3?' +more':''}\n`;
-  txt += `; c${c0}-${c1} r${r0}-${r1} [cur:${cc},${cr}]\n`;
+  // Build HTML instead of plain text for cursor highlight
+  let html = '';
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  html += esc(`; 空セルは 00H (bits=0)\n`);
+  if (warnings.length) html += esc(`; \u26a0 COLOR>${warnings.slice(0,3).join(' ')}${warnings.length>3?' +more':''}\n`);
+  html += esc(`; c${c0}-${c1} r${r0}-${r1} [cur:${cc},${cr}]\n`);
+
   for (let r=r0; r<=r1; r++) {
-    // Text bytes
-    const charBytes = [];
+    // Text bytes with cursor highlight
+    const charParts = [];
     for (let c=c0; c<=c1; c++) {
       const code = grid[r][c].bits;
-      const hex = (code < 0x10 ? '0' : '') + code.toString(16).toUpperCase() + 'H';
-      charBytes.push(r===cr && c===cc ? `[${hex}]` : hex);
+      const hex = esc((code < 0x10 ? '0' : '') + code.toString(16).toUpperCase() + 'H');
+      charParts.push(r===cr && c===cc
+        ? `<span style="color:var(--accent);font-weight:bold">${hex}</span>`
+        : hex);
     }
-    txt += `r${r} DB ${charBytes.join(',')}\n`;
-    // Attr pairs (abbreviated: show first few)
+    html += esc(`r${r} DB `) + charParts.join(esc(',')) + esc('\n');
+
+    // Attr pairs as DB, abbreviated
     const pairs = [];
     let prevCol = -1;
     for (let c=c0; c<=c1; c++) {
@@ -1051,9 +1059,9 @@ function updateAsmPreview() {
     const attrStr = pairs.slice(0,4).map(([d,f])=>
       (d<0x10?'0':'')+d.toString(16).toUpperCase()+'H,'+(f<0x10?'0':'')+f.toString(16).toUpperCase()+'H'
     ).join(',') + (pairs.length>4?',...':'');
-    txt += `   AT ${attrStr}\n`;
+    html += esc(`   DB ${attrStr}\n`);
   }
-  el.textContent = txt;
+  el.innerHTML = html;
 }
 
 // ───────────────────────────────────────────────
