@@ -29,7 +29,7 @@ Existing PC-8001 tools such as **DumpListEditor** and **EMI AtrbViewer** are pow
 - **Image import** — accepts PNG, JPEG and other browser-supported formats; auto-converted to PC-8001 constraints
 - **PNG export** — native sub-pixel resolution output
 - **Z80 ASM export** — `DB` byte format, pattern data + color attribute data separated
-- **Selection export** — ASM and PNG export for selected region only
+- **Save / Load (.p8g)** — saves complete edit state (grid size, all cell data, selected color); fully restored on reload
 - **Live ASM preview** — cursor-centered, updates in real time; cursor cell highlighted with brackets
 - **Color attribute warning** — warns when a row exceeds the hardware limit of 20 color changes
 - **Undo / Redo** — 50 steps
@@ -68,6 +68,7 @@ Or use **GitHub Pages** directly:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.4 | 2026-04-02 | Fix stale drag-state bug after tool switch; harden mousemove against missing mouseup; add Save/Load (.p8g edit state) |
 | v1.3 | 2026-04-02 | Right-click erase; zoom centered on screen center with scrollbar support; ASM preview cursor-centered real-time display with bracket highlight; image import (PNG/JPEG auto convert) |
 | v1.2 | 2026-04-02 | Fix grid right/bottom border lines; ASM preview scrollbar; color attribute >20 warning; version label in header |
 | v1.1 | 2026-04-02 | Default size 80×25 chars (160×75 dots); real-time dot count on size input; fix Apply button on second press; ASM preview blank cell note |
@@ -108,7 +109,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 - **画像読み込み** — PNG、JPEGなど対応；PC-8001制約へ自動変換
 - **PNGエクスポート** — サブピクセル等倍解像度で出力
 - **Z80 ASMエクスポート** — `DB`バイト形式、パターンデータ＋カラーアトリビュートデータ分離出力
-- **選択範囲エクスポート** — 選択範囲のみASM・PNG出力
+- **セーブ/ロード（.p8g）** — グリッドサイズ・全セルデータ・選択色を保存；完全復元可能
 - **ライブASMプレビュー** — カーソル中心でリアルタイム更新；カーソルセルを括弧でハイライト
 - **カラーアトリビュート警告** — 1行あたり20回を超える色変更を警告表示
 - **Undo / Redo** — 50ステップ
@@ -147,6 +148,7 @@ git clone https://github.com/gikonekos/pc8001-semigfx-editor.git
 
 | バージョン | 日付 | 変更内容 |
 |------------|------|----------|
+| v1.4 | 2026-04-02 | ツール切り替え時のstaleドラッグ状態バグ修正；mousemoveのmouseup取りこぼし対策；セーブ/ロード（.p8g編集状態）追加 |
 | v1.3 | 2026-04-02 | 右クリック消去；ズーム画面中心固定・スクロールバー対応；ASMプレビューカーソル中心リアルタイム表示（括弧ハイライト）；画像読み込み（PNG/JPEG自動変換） |
 | v1.2 | 2026-04-02 | グリッド右端・下端の枠線修正；ASMプレビュースクロールバー；カラーアトリビュート20回超え警告；ヘッダーバージョン表記 |
 | v1.1 | 2026-04-02 | デフォルトサイズ80×25文字（160×75ドット）；サイズ入力時リアルタイムドット数表示；Applyボタン2回目不可バグ修正；ASMプレビュー空セル説明追加 |

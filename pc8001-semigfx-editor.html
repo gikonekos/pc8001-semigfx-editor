@@ -330,7 +330,7 @@
 
 <header>
   <h1>PC-8001 SEMI-GFX EDITOR</h1>
-  <div class="sub">SEMI-GRAPHIC · 2&#xD7;3 sub-px/char · 8 COLORS · Z80 ASM / PNG EXPORT &nbsp;|&nbsp; v1.3</div>
+  <div class="sub">SEMI-GRAPHIC · 2&#xD7;3 sub-px/char · 8 COLORS · Z80 ASM / PNG EXPORT &nbsp;|&nbsp; v1.4</div>
 </header>
 
 <div class="main">
@@ -396,6 +396,13 @@
     <section>
       <h2>Canvas</h2>
       <button class="btn danger" onclick="clearAll()">✕ Clear All</button>
+    </section>
+
+    <section>
+      <h2>Save / Load</h2>
+      <button class="btn" style="border-color:#44aaff;color:#44aaff" onclick="saveState()">&#x1F4BE; Save .p8g</button>
+      <button class="btn" onclick="document.getElementById('p8g-input').click()">&#x1F4C2; Load .p8g</button>
+      <input type="file" id="p8g-input" accept=".p8g,application/json" style="display:none" onchange="loadState(event)">
     </section>
 
     <section>
@@ -734,6 +741,8 @@ overC.addEventListener('mousemove', e => {
   }
   // Always update ASM preview on move (cursor-centered)
   updateAsmPreview();
+  // Harden: if no button is held, clear painting state
+  if (e.buttons === 0) { painting = false; lastCell = null; }
   if (!painting) return;
   if (lastCell && lastCell.col===col && lastCell.row===row && curTool!=='pen') return;
   // Right button drag = erase
@@ -831,6 +840,10 @@ function redo() {
 // ───────────────────────────────────────────────
 function setTool(t) {
   curTool = t;
+  // Reset all transient pointer state to avoid stale-drag bugs
+  painting = false;
+  lastCell = null;
+  selDragging = false;
   document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById('tool-'+t);
   if (el) el.classList.add('active');
@@ -1165,6 +1178,55 @@ function importImage(e) {
     URL.revokeObjectURL(img.src);
   };
   img.src = URL.createObjectURL(file);
+}
+
+// ───────────────────────────────────────────────
+// Save / Load (.p8g)
+// ───────────────────────────────────────────────
+function saveState() {
+  const state = {
+    version: '1.4',
+    cols: COLS,
+    rows: ROWS,
+    curColor,
+    grid: grid.map(row => row.map(cell => [cell.bits, cell.color]))
+  };
+  const json = JSON.stringify(state);
+  const blob = new Blob([json], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.download = 'pc8001-semigfx.p8g';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function loadState(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const state = JSON.parse(ev.target.result);
+      if (!state.grid || !state.cols || !state.rows) throw new Error('Invalid .p8g file');
+      pushUndo();
+      COLS = state.cols;
+      ROWS = state.rows;
+      grid = state.grid.map(row => row.map(([bits, color]) => ({bits, color})));
+      if (state.curColor !== undefined) {
+        curColor = state.curColor;
+        selectColor(curColor);
+      }
+      document.getElementById('grid-w').value = COLS;
+      document.getElementById('grid-h').value = ROWS;
+      updatePxSizePreview();
+      resizeCanvases();
+      render();
+    } catch(err) {
+      alert('Failed to load .p8g file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
 }
 
 // ───────────────────────────────────────────────
