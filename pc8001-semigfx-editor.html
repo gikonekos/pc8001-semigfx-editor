@@ -773,8 +773,10 @@ overC.addEventListener('mouseleave', () => {
 function applyTool(col, row, sc, sr) {
   if (curTool === 'pen') {
     const bit = sr * SW + sc;
+    const wasEmpty = grid[row][col].bits === 0;
     grid[row][col].bits |= (1 << bit);
-    grid[row][col].color = curColor;
+    // Only set color if the cell was completely empty before this stroke
+    if (wasEmpty) grid[row][col].color = curColor;
     render();
   } else if (curTool === 'erase') {
     const bit = sr * SW + sc;
