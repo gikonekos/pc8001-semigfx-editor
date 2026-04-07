@@ -201,7 +201,7 @@ footer a { color: var(--orange); text-decoration: none; }
 
 <section id="en-spec">
   <div class="sec-head"><span class="sec-num">02</span><h2>Screen Specification</h2></div>
-  <p>The PC-8001 semi-graphic mode uses character codes in the range <mark>0xA0</mark>–<mark>0xBF</mark>. Each character cell is divided into a 2×3 grid of sub-pixels (6 bits total).</p>
+  <p>The PC-8001 semi-graphic mode uses all character codes <mark>0x00</mark>–<mark>0xFF</mark>. Each character cell is divided into a 2×4 grid of sub-pixels (8 bits total). The binary bit pattern of the character code directly maps to the dot pattern displayed.</p>
 
   <div class="sub-head">CHARACTER CELL BIT LAYOUT</div>
   <div class="tbl-wrap"><table>
@@ -209,13 +209,15 @@ footer a { color: var(--orange); text-decoration: none; }
     <tbody>
       <tr><td>bit 0</td><td>row 0, col 0</td><td>Top-left</td></tr>
       <tr><td>bit 1</td><td>row 0, col 1</td><td>Top-right</td></tr>
-      <tr><td>bit 2</td><td>row 1, col 0</td><td>Mid-left</td></tr>
-      <tr><td>bit 3</td><td>row 1, col 1</td><td>Mid-right</td></tr>
-      <tr><td>bit 4</td><td>row 2, col 0</td><td>Bottom-left</td></tr>
-      <tr><td>bit 5</td><td>row 2, col 1</td><td>Bottom-right</td></tr>
+      <tr><td>bit 2</td><td>row 1, col 0</td><td>Upper-mid-left</td></tr>
+      <tr><td>bit 3</td><td>row 1, col 1</td><td>Upper-mid-right</td></tr>
+      <tr><td>bit 4</td><td>row 2, col 0</td><td>Lower-mid-left</td></tr>
+      <tr><td>bit 5</td><td>row 2, col 1</td><td>Lower-mid-right</td></tr>
+      <tr><td>bit 6</td><td>row 3, col 0</td><td>Bottom-left</td></tr>
+      <tr><td>bit 7</td><td>row 3, col 1</td><td>Bottom-right</td></tr>
     </tbody>
   </table></div>
-  <p>Character code = <mark>0xA0 | bits</mark>. An empty cell (all sub-pixels off) is <mark>0xA0</mark>; a fully lit cell is <mark>0xBF</mark>.</p>
+  <p>Character code = <mark>bits</mark> directly (0x00–0xFF). An empty cell is <mark>0x00</mark>; a fully lit cell is <mark>0xFF</mark>.</p>
 
   <div class="sub-head">COLOR PALETTE</div>
   <div class="pal-row">
@@ -276,7 +278,7 @@ footer a { color: var(--orange); text-decoration: none; }
 
 <section id="en-gridsize">
   <div class="sec-head"><span class="sec-num">04</span><h2>Grid Size</h2></div>
-  <p>The canvas size is specified in <em class="hl">character cells</em> (W × H). The actual dot resolution is shown in real time as you type: <mark>dots = W×2 × H×3</mark>.</p>
+  <p>The canvas size is specified in <em class="hl">character cells</em> (W × H). The actual dot resolution is shown in real time as you type: <mark>dots = W×2 × H×4</mark>.</p>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Parameter</th><th>Range</th><th>Default</th></tr></thead>
     <tbody>
@@ -295,7 +297,7 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="sec-head"><span class="sec-num">05</span><h2>Image Import</h2></div>
   <p>Click <mark>⬆ Load Image</mark> in the left toolbar to import a PNG, JPEG, or other browser-supported image. The image is automatically converted to the current canvas size and PC-8001 constraints.</p>
   <div class="sub-head">CONVERSION PROCESS</div>
-  <p>The image is scaled to the canvas's sub-pixel resolution (COLS×2 × ROWS×3 pixels). Then, for each character cell:</p>
+  <p>The image is scaled to the canvas's sub-pixel resolution (COLS×2 × ROWS×4 pixels). Then, for each character cell:</p>
   <ul class="doc-list">
     <li><em class="hl">Bit pattern</em> — Each of the 6 sub-pixels is compared against a luminance threshold (half the cell's average luminance + 20). Sub-pixels brighter than the threshold are set ON.</li>
     <li><em class="hl">Color attribute</em> — Each sub-pixel's RGB value is mapped to the nearest PC-8001 color. The most common non-black color in the cell is used as the cell's color attribute.</li>
@@ -312,16 +314,16 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="tbl-wrap"><table>
     <thead><tr><th>Element</th><th>Description</th></tr></thead>
     <tbody>
-      <tr><td><code>[A0H]</code></td><td>The character cell currently under the cursor (highlighted with brackets).</td></tr>
+      <tr><td><code>[00H]</code></td><td>The character cell currently under the cursor (highlighted with accent color).</td></tr>
       <tr><td><code>c23-30 r0-5</code></td><td>The visible column and row range of the preview.</td></tr>
       <tr><td><code>⚠ COLOR&gt;…</code></td><td>Warning: one or more rows exceed the 20-change color attribute limit.</td></tr>
-      <tr><td>Pattern section</td><td>Character codes (A0H–BFH) in row-major order.</td></tr>
-      <tr><td>Color section</td><td>Color attribute index (0–7) per cell, in the same order.</td></tr>
+      <tr><td>rN DB …</td><td>Character codes (00H–FFH) for row N, text area.</td></tr>
+      <tr><td>   DB …</td><td>Attribute pairs [distance][flag] for the same row.</td></tr>
     </tbody>
   </table></div>
   <div class="card info">
     <div class="card-head">ℹ NOTE</div>
-    <p>An empty cell (no sub-pixels lit) always appears as <mark>A0H</mark>.</p>
+    <p>An empty cell (no sub-pixels lit) always appears as <mark>00H</mark>.</p>
   </div>
 </section>
 
@@ -346,19 +348,20 @@ footer a { color: var(--orange); text-decoration: none; }
 
 <section id="en-asmformat">
   <div class="sec-head"><span class="sec-num">08</span><h2>ASM Format</h2></div>
-  <p>The exported <mark>.asm</mark> file contains two separate data blocks in Z80 <mark>DB</mark> format, row-major order:</p>
+  <p>The exported <mark>.asm</mark> file outputs the real PC-8001 RAM layout per row: text area (char codes) followed by attribute area (distance+flag pairs), in Z80 <mark>DB</mark> format:</p>
 <pre>; PC-8001 Semi-Graphic Data
-; Grid: 10 cols x 3 rows (chars)
-; Color attr: 0=BLK 1=RED 2=GRN 3=YEL 4=BLU 5=MAG 6=CYN 7=WHT
+; RAM layout: text (80 chars) + attr (40 bytes = 20 pairs) per row
+; Char code 0x00-0xFF: b0=top-L b1=top-R ... b6=bot-L b7=bot-R
+; Attr: [distance][flag] x 20 pairs, padded with 50H,00H
+; Flag (mode1): b3=1, b4=SG, b7b6b5=color
 
-; -- Pattern data (char codes) --
-  DB  0A0H,0BFH,0B4H,...  ; row 0
-  DB  0AAH,0A0H,0BCH,...  ; row 1
-
-; -- Color attribute data --
-  DB  7H,2H,1H,...        ; row 0
-  DB  7H,7H,4H,...        ; row 1</pre>
-  <p>Character codes range from <mark>0A0H</mark> (blank) to <mark>0BFH</mark> (fully filled). Color attribute values are 0–7 corresponding to the 8-color palette.</p>
+; -- row 0 --
+  DB  00H,00H,02H,...   ; text
+  DB  00H,F8H,02H,B8H,50H,00H,...  ; attr
+; -- row 1 --
+  DB  00H,00H,00H,...   ; text
+  DB  00H,F8H,50H,00H,...           ; attr</pre>
+  <p>Character codes range from <mark>00H</mark> (blank) to <mark>FFH</mark> (fully filled). Attribute flag: <mark>b7b6b5</mark>=color, <mark>b4</mark>=SG (1=semi-graphic), <mark>b3</mark>=1 (mode1). Example: WHITE+SG = <mark>F8H</mark>.</p>
 </section>
 
 <section id="en-shortcuts">
@@ -434,7 +437,7 @@ footer a { color: var(--orange); text-decoration: none; }
 
 <section id="ja-spec">
   <div class="sec-head"><span class="sec-num">02</span><h2>画面仕様</h2></div>
-  <p>PC-8001のセミグラフィックモードは、<mark>0xA0</mark>〜<mark>0xBF</mark>の範囲の文字コードを使用します。各文字セルは2×3のサブピクセル（6ビット）に分割されています。</p>
+  <p>PC-8001のセミグラフィックモードは、文字コード<mark>0x00</mark>〜<mark>0xFF</mark>の全256種を使用します。各文字セルは2×4のサブピクセル（8ビット）に分割されており、文字コードのビットパターンがそのままドットパターンに対応します。</p>
 
   <div class="sub-head">文字セルのビット配置</div>
   <div class="tbl-wrap"><table>
@@ -442,13 +445,15 @@ footer a { color: var(--orange); text-decoration: none; }
     <tbody>
       <tr><td>bit 0</td><td>行0, 列0</td><td>左上</td></tr>
       <tr><td>bit 1</td><td>行0, 列1</td><td>右上</td></tr>
-      <tr><td>bit 2</td><td>行1, 列0</td><td>左中</td></tr>
-      <tr><td>bit 3</td><td>行1, 列1</td><td>右中</td></tr>
-      <tr><td>bit 4</td><td>行2, 列0</td><td>左下</td></tr>
-      <tr><td>bit 5</td><td>行2, 列1</td><td>右下</td></tr>
+      <tr><td>bit 2</td><td>行1, 列0</td><td>左中上</td></tr>
+      <tr><td>bit 3</td><td>行1, 列1</td><td>右中上</td></tr>
+      <tr><td>bit 4</td><td>行2, 列0</td><td>左中下</td></tr>
+      <tr><td>bit 5</td><td>行2, 列1</td><td>右中下</td></tr>
+      <tr><td>bit 6</td><td>行3, 列0</td><td>左下</td></tr>
+      <tr><td>bit 7</td><td>行3, 列1</td><td>右下</td></tr>
     </tbody>
   </table></div>
-  <p>文字コード = <mark>0xA0 | bits</mark>。空セル（全消灯）は<mark>0xA0</mark>、全点灯は<mark>0xBF</mark>。</p>
+  <p>文字コード = <mark>bits</mark>（0x00〜0xFF）。空セル（全消灯）は<mark>0x00</mark>、全点灯は<mark>0xFF</mark>。</p>
 
   <div class="sub-head">カラーパレット</div>
   <div class="pal-row">
@@ -509,7 +514,7 @@ footer a { color: var(--orange); text-decoration: none; }
 
 <section id="ja-gridsize">
   <div class="sec-head"><span class="sec-num">04</span><h2>グリッドサイズ</h2></div>
-  <p>キャンバスサイズは<em class="hl">文字セル単位</em>（W × H）で指定します。実際のドット解像度は入力中にリアルタイムで表示されます（<mark>ドット数 = W×2 × H×3</mark>）。</p>
+  <p>キャンバスサイズは<em class="hl">文字セル単位</em>（W × H）で指定します。実際のドット解像度は入力中にリアルタイムで表示されます（<mark>ドット数 = W×2 × H×4</mark>）。</p>
   <div class="tbl-wrap"><table>
     <thead><tr><th>パラメータ</th><th>範囲</th><th>デフォルト</th></tr></thead>
     <tbody>
@@ -528,7 +533,7 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="sec-head"><span class="sec-num">05</span><h2>画像読み込み</h2></div>
   <p>左ツールバーの<mark>⬆ Load Image</mark>ボタンをクリックして、PNG、JPEGなどのブラウザ対応画像ファイルを読み込みます。現在のキャンバスサイズとPC-8001の制約に自動変換されます。</p>
   <div class="sub-head">変換処理</div>
-  <p>画像をキャンバスのサブピクセル解像度（COLS×2 × ROWS×3ピクセル）にリサイズした後、各文字セルで以下を行います：</p>
+  <p>画像をキャンバスのサブピクセル解像度（COLS×2 × ROWS×4ピクセル）にリサイズした後、各文字セルで以下を行います：</p>
   <ul class="doc-list">
     <li><em class="hl">ビットパターン</em> — 6つのサブピクセルそれぞれの輝度を閾値（セル内平均輝度の半分＋20）と比較し、明るい場合はONにします。</li>
     <li><em class="hl">カラーアトリビュート</em> — 各サブピクセルのRGB値をPC-8001の8色に最近傍マッピングし、セル内で最も多い非黒色をカラーアトリビュートとして採用します。</li>
@@ -545,16 +550,16 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="tbl-wrap"><table>
     <thead><tr><th>要素</th><th>説明</th></tr></thead>
     <tbody>
-      <tr><td><code>[A0H]</code></td><td>現在のカーソル位置の文字セル（括弧でハイライト表示）。</td></tr>
+      <tr><td><code>[00H]</code></td><td>現在のカーソル位置の文字セル（アクセントカラーでハイライト表示）。</td></tr>
       <tr><td><code>c23-30 r0-5</code></td><td>プレビューの表示列・行範囲。</td></tr>
       <tr><td><code>⚠ COLOR&gt;…</code></td><td>警告：カラーアトリビュート変更回数が20回を超えている行があります。</td></tr>
-      <tr><td>Patternセクション</td><td>文字コード（A0H〜BFH）を行優先順で表示。</td></tr>
-      <tr><td>Colorセクション</td><td>各セルのカラーアトリビュートインデックス（0〜7）を同順で表示。</td></tr>
+      <tr><td>rN DB …</td><td>行Nのテキストエリア（文字コード00H〜FFH）。</td></tr>
+      <tr><td>　　DB …</td><td>同行のアトリビュートペア（距離＋フラグ）。</td></tr>
     </tbody>
   </table></div>
   <div class="card info">
     <div class="card-head">ℹ 備考</div>
-    <p>空セル（サブピクセルがすべてOFF）は常に<mark>A0H</mark>で表示されます。</p>
+    <p>空セル（サブピクセルがすべてOFF）は常に<mark>00H</mark>で表示されます。</p>
   </div>
 </section>
 
@@ -579,19 +584,20 @@ footer a { color: var(--orange); text-decoration: none; }
 
 <section id="ja-asmformat">
   <div class="sec-head"><span class="sec-num">08</span><h2>出力フォーマット</h2></div>
-  <p>出力される<mark>.asm</mark>ファイルには、Z80 <mark>DB</mark>形式で行優先順の2つのデータブロックが含まれます：</p>
+  <p>出力される<mark>.asm</mark>ファイルは、実PC-8001のRAMレイアウトに準拠しています。各行につきテキストエリア（文字コード）＋アトリビュートエリア（距離＋フラグペア）をZ80 <mark>DB</mark>形式で出力します：</p>
 <pre>; PC-8001 Semi-Graphic Data
-; Grid: 10 cols x 3 rows (chars)
-; Color attr: 0=BLK 1=RED 2=GRN 3=YEL 4=BLU 5=MAG 6=CYN 7=WHT
+; RAM: テキスト(80文字) + アトリビュート(40バイト=20ペア) / 行
+; 文字コード 0x00-0xFF: b0=左上 b1=右上 ... b6=左下 b7=右下
+; アトリビュート: [距離][フラグ] x 20ペア、残りは50H,00Hで埋める
+; フラグ(mode1): b3=1, b4=SG, b7b6b5=色
 
-; -- Pattern data (char codes) --
-  DB  0A0H,0BFH,0B4H,...  ; row 0
-  DB  0AAH,0A0H,0BCH,...  ; row 1
-
-; -- Color attribute data --
-  DB  7H,2H,1H,...        ; row 0
-  DB  7H,7H,4H,...        ; row 1</pre>
-  <p>文字コードは<mark>0A0H</mark>（空白）〜<mark>0BFH</mark>（全点灯）の範囲です。カラーアトリビュートは8色パレットに対応する0〜7の値です。</p>
+; -- row 0 --
+  DB  00H,00H,02H,...   ; text
+  DB  00H,F8H,02H,B8H,50H,00H,...  ; attr
+; -- row 1 --
+  DB  00H,00H,00H,...   ; text
+  DB  00H,F8H,50H,00H,...           ; attr</pre>
+  <p>文字コードは<mark>00H</mark>（空白）〜<mark>FFH</mark>（全点灯）の範囲です。アトリビュートフラグ：<mark>b7b6b5</mark>=色、<mark>b4</mark>=SG（1=セミグラフィック）、<mark>b3</mark>=1（mode1）。例：WHITE+SG = <mark>F8H</mark>。</p>
 </section>
 
 <section id="ja-shortcuts">
