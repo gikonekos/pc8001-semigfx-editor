@@ -157,7 +157,7 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="topbar-spacer"></div>
   <a href="pc8001-semigfx-editor.html">🎨 Open Editor</a>
   <span class="topbar-sep">|</span>
-  <span>v1.6</span>
+  <span>v1.7</span>
 </div>
 
 <div class="page">
@@ -166,7 +166,7 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="hero-badge">DOCUMENTATION</div>
   <h1 id="en-top">PC-<em>8001</em> SEMI-GRAPHIC EDITOR<span class="cursor"></span></h1>
   <div class="hero-sub">Specification &amp; User Manual　／　仕様書 &amp; 利用マニュアル</div>
-  <div class="ver-tag">VERSION 1.6 — SINGLE FILE HTML — NO DEPENDENCIES</div>
+  <div class="ver-tag">VERSION 1.7 — SINGLE FILE HTML — NO DEPENDENCIES</div>
 </div>
 
 <!-- TOC EN -->
@@ -264,6 +264,14 @@ footer a { color: var(--orange); text-decoration: none; }
   </div>
   <div class="sub-head">RIGHT-CLICK ERASE</div>
   <p>Right-clicking on the canvas erases the sub-pixel under the cursor, regardless of the active tool. Right-click drag performs continuous erase. If the browser context menu appears, right-click erase is not available in that environment.</p>
+
+  <div class="sub-head">ROTATE SELECTION</div>
+  <p>With an active selection (defined by the Select tool), use <mark>↻ CW</mark> or <mark>↺ CCW</mark> in the Rotate (Selection) toolbar section to rotate the selected region 90° clockwise or counter-clockwise.</p>
+  <p>The rotation operates at sub-pixel level: all dot positions within the selection are rotated, then reassembled into character cells. Partial cells at the edges are included. The color attribute of each output cell is taken from the most common color among its lit sub-pixels. The selection region updates to match the rotated area after the operation. Undo is supported.</p>
+  <div class="card tip">
+    <div class="card-head">◆ NOTE</div>
+    <p>Rotating a non-square selection changes its aspect ratio. For example, a 3×5 cell selection (6×20 sub-pixels) becomes 20×6 sub-pixels (10×3 cells) after rotation.</p>
+  </div>
 </section>
 
 <section id="en-gridsize">
@@ -373,6 +381,7 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="tbl-wrap"><table>
     <thead><tr><th>Version</th><th>Date</th><th>Changes</th></tr></thead>
     <tbody>
+      <tr><td><span class="ver">v1.7</span></td><td>2026-04-02</td><td>Fix evCell sc/sr clamp (sub-pixel coords now bounded to 0–1 / 0–3); fix floodFill 0x3F→0xFF for 2×4 cells; fix status bar code display; add selection rotate CW/CCW (sub-pixel level, with color re-mapping)</td></tr>
       <tr><td><span class="ver">v1.6</span></td><td>2026-04-02</td><td>Stabilize color attribute: pen no longer overwrites color of already-lit cells; only newly empty cells get curColor on first stroke</td></tr>
       <tr><td><span class="ver">v1.5</span></td><td>2026-04-02</td><td>Fix semi-graphic spec: 2×4 sub-pixels (8 bits, 0x00–0xFF) per cell; correct ASM output to real PC-8001 RAM layout (text + attribute pairs per row); attribute flag format per hardware spec</td></tr>
       <tr><td><span class="ver">v1.4</span></td><td>2026-04-02</td><td>Fix stale drag-state bug after tool switch (reset painting/lastCell/selDragging in setTool); harden mousemove against missing mouseup; add Save/Load (.p8g edit state)</td></tr>
@@ -488,6 +497,14 @@ footer a { color: var(--orange); text-decoration: none; }
   </div>
   <div class="sub-head">右クリック消去</div>
   <p>キャンバス上で右クリックすると、アクティブなツールに関わらずサブピクセルを消去します。右クリックドラッグで連続消去が可能です。ブラウザのコンテキストメニューが表示される環境では右クリック消去は使用できません。</p>
+
+  <div class="sub-head">選択範囲のローテート</div>
+  <p>Selectツールで選択範囲を指定した後、ツールバーの「Rotate (Selection)」セクションの<mark>↻ CW</mark>（時計回り）または<mark>↺ CCW</mark>（反時計回り）ボタンで選択範囲を90°回転できます。</p>
+  <p>回転はサブピクセル単位で行われます。選択範囲内の全ドット位置を回転し、文字セル（2×4）単位に再集計します。端数セルも含めて反映されます。出力セルのカラーアトリビュートは、点灯サブピクセルの中で最も多い色が採用されます。回転後、選択範囲は新しいサイズに更新されます。Undo対応。</p>
+  <div class="card tip">
+    <div class="card-head">◆ 備考</div>
+    <p>正方形でない選択範囲を回転するとアスペクト比が変わります。例えば3×5セル（6×20サブピクセル）は回転後20×6サブピクセル（10×3セル）になります。</p>
+  </div>
 </section>
 
 <section id="ja-gridsize">
@@ -597,6 +614,7 @@ footer a { color: var(--orange); text-decoration: none; }
   <div class="tbl-wrap"><table>
     <thead><tr><th>バージョン</th><th>日付</th><th>変更内容</th></tr></thead>
     <tbody>
+      <tr><td><span class="ver">v1.7</span></td><td>2026-04-02</td><td>evCellのsc/srクランプ修正（サブピクセル座標を0〜1/0〜3に制限）；floodFill 0x3F→0xFF修正（2×4対応）；ステータスバーコード表示修正；選択範囲の時計回り/反時計回り90°ローテート機能追加（サブピクセル単位、カラー再マッピング付き）</td></tr>
       <tr><td><span class="ver">v1.6</span></td><td>2026-04-02</td><td>カラーアトリビュート安定化：既に点灯済みのセルへのPen追加描画で色を上書きしない；空セルへの初回描画時のみcurColorを設定</td></tr>
       <tr><td><span class="ver">v1.5</span></td><td>2026-04-02</td><td>セミグラフィック仕様修正：2×4サブピクセル（8ビット、0x00〜0xFF）に修正；ASM出力を実PC-8001 RAMレイアウト（テキスト＋アトリビュートペア）に対応；アトリビュートフラグをハードウェア仕様に準拠</td></tr>
       <tr><td><span class="ver">v1.4</span></td><td>2026-04-02</td><td>ツール切り替え時のstaleドラッグ状態バグ修正（setTool内でpainting/lastCell/selDraggingをリセット）；mousemoveのmouseup取りこぼし対策；セーブ/ロード（.p8g編集状態）追加</td></tr>
@@ -613,7 +631,7 @@ footer a { color: var(--orange); text-decoration: none; }
 </div><!-- /page -->
 
 <footer>
-  <span>PC-8001 Semi-Graphic Editor</span> &nbsp;|&nbsp; v1.6 &nbsp;|&nbsp; MIT License<br>
+  <span>PC-8001 Semi-Graphic Editor</span> &nbsp;|&nbsp; v1.7 &nbsp;|&nbsp; MIT License<br>
   <a href="https://github.com/gikonekos/pc8001-semigfx-editor">github.com/gikonekos/pc8001-semigfx-editor</a>
 </footer>
 

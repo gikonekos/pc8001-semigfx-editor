@@ -30,6 +30,7 @@ Existing PC-8001 tools such as **DumpListEditor** and **EMI AtrbViewer** are pow
 - **PNG export** — native sub-pixel resolution output
 - **Z80 ASM export** — `DB` byte format, pattern data + color attribute data separated
 - **Save / Load (.p8g)** — saves complete edit state (grid size, all cell data, selected color); fully restored on reload
+- **Selection rotate** — rotate selected region 90° CW / CCW at sub-pixel level with color re-mapping
 - **Live ASM preview** — cursor-centered, updates in real time; cursor cell highlighted with brackets
 - **Color attribute warning** — warns when a row exceeds the hardware limit of 20 color changes
 - **Undo / Redo** — 50 steps
@@ -68,6 +69,7 @@ Or use **GitHub Pages** directly:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.7 | 2026-04-02 | Fix evCell sc/sr clamp; fix floodFill 0x3F→0xFF for 2×4 cells; fix status bar code display; add selection rotate CW/CCW (sub-pixel level) |
 | v1.6 | 2026-04-02 | Stabilize color attribute: pen no longer overwrites color of already-lit cells; only newly empty cells get curColor on first stroke |
 | v1.5 | 2026-04-02 | Fix semi-graphic spec: 2×4 sub-pixels (8 bits, 0x00–0xFF); correct ASM output to real PC-8001 RAM layout (text + attribute pairs per row); attribute flag per hardware spec |
 | v1.4 | 2026-04-02 | Fix stale drag-state bug after tool switch; harden mousemove against missing mouseup; add Save/Load (.p8g edit state) |
@@ -112,6 +114,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 - **PNGエクスポート** — サブピクセル等倍解像度で出力
 - **Z80 ASMエクスポート** — `DB`バイト形式、パターンデータ＋カラーアトリビュートデータ分離出力
 - **セーブ/ロード（.p8g）** — グリッドサイズ・全セルデータ・選択色を保存；完全復元可能
+- **選択範囲ローテート** — 選択範囲を時計回り/反時計回りに90°回転（サブピクセル単位・カラー再マッピング付き）
 - **ライブASMプレビュー** — カーソル中心でリアルタイム更新；カーソルセルを括弧でハイライト
 - **カラーアトリビュート警告** — 1行あたり20回を超える色変更を警告表示
 - **Undo / Redo** — 50ステップ
@@ -150,6 +153,7 @@ git clone https://github.com/gikonekos/pc8001-semigfx-editor.git
 
 | バージョン | 日付 | 変更内容 |
 |------------|------|----------|
+| v1.7 | 2026-04-02 | evCellのsc/srクランプ修正；floodFill 0x3F→0xFF修正（2×4対応）；ステータスバーコード表示修正；選択範囲の時計回り/反時計回り90°ローテート機能追加 |
 | v1.6 | 2026-04-02 | カラーアトリビュート安定化：既に点灯済みのセルへのPen追加描画で色を上書きしない；空セルへの初回描画時のみcurColorを設定 |
 | v1.5 | 2026-04-02 | セミグラフィック仕様修正：2×4サブピクセル（8ビット、0x00〜0xFF）；ASM出力を実PC-8001 RAMレイアウトに対応；アトリビュートフラグをハードウェア仕様に準拠 |
 | v1.4 | 2026-04-02 | ツール切り替え時のstaleドラッグ状態バグ修正；mousemoveのmouseup取りこぼし対策；セーブ/ロード（.p8g編集状態）追加 |

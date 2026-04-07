@@ -330,7 +330,7 @@
 
 <header>
   <h1>PC-8001 SEMI-GFX EDITOR</h1>
-  <div class="sub">SEMI-GRAPHIC · 2&#xD7;4 sub-px/char · 0x00-0xFF · 8 COLORS · Z80 ASM / PNG EXPORT &nbsp;|&nbsp; v1.6</div>
+  <div class="sub">SEMI-GRAPHIC · 2&#xD7;4 sub-px/char · 0x00-0xFF · 8 COLORS · Z80 ASM / PNG EXPORT &nbsp;|&nbsp; v1.7</div>
 </header>
 
 <div class="main">
@@ -385,6 +385,14 @@
       <h2>Export (Full)</h2>
       <button class="btn export" onclick="exportASM(null)">⬇ ASM (Z80 DB)</button>
       <button class="btn export" onclick="exportPNG(null)">⬇ PNG</button>
+    </section>
+
+    <section>
+      <h2>Rotate (Selection)</h2>
+      <div class="tool-row">
+        <button class="btn export-sel" onclick="rotateSelection(1)" title="Clockwise 90°">&#x21BB; CW</button>
+        <button class="btn export-sel" onclick="rotateSelection(-1)" title="Counter-clockwise 90°">&#x21BA; CCW</button>
+      </div>
     </section>
 
     <section>
@@ -688,8 +696,8 @@ function evCell(e) {
   const my = e.clientY - rect.top;
   const col = Math.floor(mx / cellPx());
   const row = Math.floor(my / cellPy());
-  const sc  = Math.floor((mx % cellPx()) / zoom);
-  const sr  = Math.floor((my % cellPy()) / zoom);
+  const sc  = Math.max(0, Math.min(SW-1, Math.floor((mx % cellPx()) / zoom)));
+  const sr  = Math.max(0, Math.min(SH-1, Math.floor((my % cellPy()) / zoom)));
   return { col: Math.max(0,Math.min(col,COLS-1)),
            row: Math.max(0,Math.min(row,ROWS-1)), sc, sr };
 }
@@ -730,7 +738,7 @@ overC.addEventListener('mousemove', e => {
   document.getElementById('st-cursor').textContent = `${col*SW+sc},${row*SH+sr}`;
   document.getElementById('st-char').textContent   = `${col},${row}`;
   const cell = grid[row][col];
-  document.getElementById('st-code').textContent  = '0x'+(0xA0|cell.bits).toString(16).toUpperCase();
+  document.getElementById('st-code').textContent  = '0x'+cell.bits.toString(16).toUpperCase().padStart(2,'0');
   document.getElementById('st-color').textContent = PC8_COLOR_NAMES[cell.color];
 
   if (selDragging) {
@@ -797,7 +805,7 @@ function eraseCell(col, row, sc, sr) {
 function floodFill(col, row) {
   const targetBits  = grid[row][col].bits;
   const targetColor = grid[row][col].color;
-  if (targetBits === 0x3F && targetColor === curColor) return; // already full target color
+  if (targetBits === 0xFF && targetColor === curColor) return; // already full target color
   const stack = [{col,row}];
   const visited = new Set();
   while (stack.length) {
@@ -807,7 +815,7 @@ function floodFill(col, row) {
     if (visited.has(key)) continue;
     if (grid[r][c].bits !== targetBits || grid[r][c].color !== targetColor) continue;
     visited.add(key);
-    grid[r][c].bits  = 0x3F;
+    grid[r][c].bits  = 0xFF;
     grid[r][c].color = curColor;
     stack.push({col:c-1,row:r},{col:c+1,row:r},{col:c,row:r-1},{col:c,row:r+1});
   }
@@ -906,6 +914,127 @@ function clearAll() {
   initGrid();
   selActive=false; selStart=null; selEnd=null;
   renderOverlay();
+  render();
+}
+
+// ───────────────────────────────────────────────
+// Rotate Selection
+// ───────────────────────────────────────────────
+function rotateSelection(dir) {
+  // dir: +1 = clockwise, -1 = counter-clockwise
+  const range = getSelRange();
+  if (!range) { alert('選択範囲がありません。Selectツールでドラッグしてください。'); return; }
+
+  const { r0, r1, c0, c1 } = range;
+  const selCols = c1 - c0 + 1;
+  const selRows = r1 - r0 + 1;
+
+  // Sub-pixel dimensions of selection
+  const spW = selCols * SW;  // e.g. 3 chars * 2 = 6 sub-pixels wide
+  const spH = selRows * SH;  // e.g. 5 chars * 4 = 20 sub-pixels tall
+
+  // Extract sub-pixel dot array and color map from selection
+  // dots[y][x] = true/false
+  // colors[y][x] = color index of the cell that sub-pixel belongs to
+  const dots   = [];
+  const colors = [];
+  for (let y = 0; y < spH; y++) {
+    dots[y]   = [];
+    colors[y] = [];
+    for (let x = 0; x < spW; x++) {
+      const cellCol = c0 + Math.floor(x / SW);
+      const cellRow = r0 + Math.floor(y / SH);
+      const sc = x % SW;
+      const sr = y % SH;
+      const bit = sr * SW + sc;
+      dots[y][x]   = (grid[cellRow][cellCol].bits >> bit) & 1;
+      colors[y][x] = grid[cellRow][cellCol].color;
+    }
+  }
+
+  // Rotate sub-pixel array 90°
+  // CW:  new[x][spH-1-y] = old[y][x]  → new dimensions: spH wide, spW tall
+  // CCW: new[spW-1-x][y] = old[y][x]  → new dimensions: spH wide, spW tall
+  const newW = spH;  // rotated width in sub-pixels
+  const newH = spW;  // rotated height in sub-pixels
+
+  const newDots   = [];
+  const newColors = [];
+  for (let y = 0; y < newH; y++) {
+    newDots[y]   = new Array(newW).fill(0);
+    newColors[y] = new Array(newW).fill(7);
+  }
+
+  for (let y = 0; y < spH; y++) {
+    for (let x = 0; x < spW; x++) {
+      let nx, ny;
+      if (dir === 1) {
+        // Clockwise: (x,y) → (spH-1-y, x)
+        nx = spH - 1 - y;
+        ny = x;
+      } else {
+        // Counter-clockwise: (x,y) → (y, spW-1-x)
+        nx = y;
+        ny = spW - 1 - x;
+      }
+      newDots[ny][nx]   = dots[y][x];
+      newColors[ny][nx] = colors[y][x];
+    }
+  }
+
+  // How many cells fit in the rotated area (ceil to include partial cells)
+  const newCellCols = Math.ceil(newW / SW);
+  const newCellRows = Math.ceil(newH / SH);
+
+  pushUndo();
+
+  // Clear original selection area
+  for (let r = r0; r <= r1; r++) {
+    for (let c = c0; c <= c1; c++) {
+      grid[r][c] = { bits: 0, color: 7 };
+    }
+  }
+
+  // Write rotated sub-pixels back into grid starting from (r0, c0)
+  for (let cy = 0; cy < newCellRows; cy++) {
+    for (let cx = 0; cx < newCellCols; cx++) {
+      const gridRow = r0 + cy;
+      const gridCol = c0 + cx;
+      if (gridRow >= ROWS || gridCol >= COLS) continue;
+
+      let bits = 0;
+      let dominantColor = 7;
+      const colorCount = new Array(8).fill(0);
+
+      for (let sr = 0; sr < SH; sr++) {
+        for (let sc = 0; sc < SW; sc++) {
+          const nx = cx * SW + sc;
+          const ny = cy * SH + sr;
+          if (nx < newW && ny < newH) {
+            if (newDots[ny][nx]) {
+              const bit = sr * SW + sc;
+              bits |= (1 << bit);
+              colorCount[newColors[ny][nx]]++;
+            }
+          }
+        }
+      }
+
+      // Pick most common color among lit sub-pixels
+      let maxCount = 0;
+      for (let i = 0; i < 8; i++) {
+        if (colorCount[i] > maxCount) { maxCount = colorCount[i]; dominantColor = i; }
+      }
+
+      grid[gridRow][gridCol] = { bits, color: maxCount > 0 ? dominantColor : 7 };
+    }
+  }
+
+  // Update selection to cover rotated area
+  selStart = { col: c0, row: r0 };
+  selEnd   = { col: Math.min(COLS-1, c0 + newCellCols - 1),
+               row: Math.min(ROWS-1, r0 + newCellRows - 1) };
+
   render();
 }
 
