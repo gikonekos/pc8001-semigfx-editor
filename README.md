@@ -167,3 +167,8 @@ git clone https://github.com/gikonekos/pc8001-semigfx-editor.git
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) をご覧ください。
+
+## Related
+
+- [PC-6001 GFX Editor](https://github.com/gikonekos/pc6001-gfx-editor)
+- Maintainer: [github.com/gikonekos](https://github.com/gikonekos)
